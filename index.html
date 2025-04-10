@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أداة تحليل الكتابة</title>
+    <style>
+        /* التنسيقات العامة */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .disclaimer {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 25px;
+            text-align: center;
+            color: #856404;
+            border-left: 4px solid #ffeeba;
+            font-size: 14px;
+        }
+
+        /* منطقة الكتابة */
+        .typing-area {
+            margin-bottom: 25px;
+        }
+
+        #typingBox {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            resize: none;
+            font-size: 18px;
+            transition: border 0.3s;
+        }
+
+        #typingBox:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        /* الإحصائيات */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+            gap: 15px;
+        }
+
+        .stat-box {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        /* سجل الضغطات */
+        .log-container {
+            margin-top: 30px;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        #keyLog {
+            height: 300px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+
+        .log-entry {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* الأزرار */
+        .btn {
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        /* رسالة في الكونسول */
+        .console-message {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .stats {
+                flex-direction: column;
+            }
+            
+            .stat-box {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>أداة تحليل الكتابة</h1>
+        
+        <div class="disclaimer">
+            هذا البرنماج للأغراض التعلمية فقط مطور مهندس:محمد بدوي
+            <br>
+        </div>
+        
+        <div class="typing-area">
+            <textarea id="typingBox" placeholder="ابدأ الكتابة هنا..."></textarea>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <span class="stat-value" id="totalKeys">0</span>
+                <span class="stat-label">إجمالي الضغطات</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value" id="sessionKeys">0</span>
+                <span class="stat-label">هذه الجلسة</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value" id="lastKey">-</span>
+                <span class="stat-label">آخر مفتاح</span>
+            </div>
+        </div>
+        
+        <div class="log-container">
+            <div class="log-header">
+                <h3>سجل الضغطات</h3>
+                <div>
+                    <button id="clearLog" class="btn btn-danger">مسح السجل</button>
+                    <button id="exportLog" class="btn">تصدير البيانات</button>
+                </div>
+            </div>
+            <div id="keyLog"></div>
+        </div>
+    </div>
+
+    <div class="console-message">
+        هذا المشروع للأغراض التعليمية فقط 
+    مطور:مهندس محمد بدوي.
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // عناصر DOM
+            const typingBox = document.getElementById('typingBox');
+            const totalKeysElement = document.getElementById('totalKeys');
+            const sessionKeysElement = document.getElementById('sessionKeys');
+            const lastKeyElement = document.getElementById('lastKey');
+            const keyLogElement = document.getElementById('keyLog');
+            const clearLogBtn = document.getElementById('clearLog');
+            const exportLogBtn = document.getElementById('exportLog');
+            
+            // المتغيرات
+            let totalKeys = localStorage.getItem('totalKeys') ? parseInt(localStorage.getItem('totalKeys')) : 0;
+            let sessionKeys = 0;
+            let keystrokes = JSON.parse(localStorage.getItem('keystrokes')) || [];
+            
+            // تهيئة العرض
+            updateDisplay();
+            renderKeystrokesLog();
+            
+            // استمع لأحداث لوحة المفاتيح
+            typingBox.addEventListener('keydown', function(event) {
+                // تجاهل مفاتيح التحكم
+                if (event.ctrlKey || event.altKey || event.metaKey) return;
+                
+                // تسجيل البيانات
+                const timestamp = new Date();
+                const keystroke = {
+                    key: event.key,
+                    code: event.code,
+                    timestamp: timestamp.toISOString(),
+                    time: timestamp.toLocaleTimeString(),
+                    isSpecial: event.key.length > 1
+                };
+                
+                // تحديث العدادات
+                totalKeys++;
+                sessionKeys++;
+                
+                // حفظ الضغطة
+                keystrokes.unshift(keystroke); // إضافة في بداية المصفوفة
+                if (keystrokes.length > 100) keystrokes.pop(); // تحديد السجل بـ 100 ضغطة
+                
+                // حفظ البيانات وعرضها
+                saveData();
+                updateDisplay();
+                renderKeystroke(keystroke);
+            });
+            
+            // أحداث الأزرار
+            clearLogBtn.addEventListener('click', function() {
+                if (confirm('هل أنت متأكد من رغبتك في مسح سجل الضغطات؟')) {
+                    keystrokes = [];
+                    sessionKeys = 0;
+                    saveData();
+                    updateDisplay();
+                    keyLogElement.innerHTML = '';
+                }
+            });
+            
+            exportLogBtn.addEventListener('click', exportData);
+            
+            // وظائف مساعدة
+            function updateDisplay() {
+                totalKeysElement.textContent = totalKeys.toLocaleString();
+                sessionKeysElement.textContent = sessionKeys.toLocaleString();
+                
+                if (keystrokes.length > 0) {
+                    lastKeyElement.textContent = keystrokes[0].key;
+                }
+            }
+            
+            function renderKeystrokesLog() {
+                keyLogElement.innerHTML = '';
+                keystrokes.slice(0, 50).forEach(ks => renderKeystroke(ks));
+            }
+            
+            function renderKeystroke(keystroke) {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                
+                const keyDisplay = keystroke.isSpecial ? 
+                    `<span style="color: #e74c3c">[${keystroke.code}]</span>` : 
+                    `<span style="color: #2ecc71">"${keystroke.key}"</span>`;
+                
+                logEntry.innerHTML = `
+                    <span>${keyDisplay}</span>
+                    <span style="color: #7f8c8d">${keystroke.time}</span>
+                `;
+                
+                keyLogElement.insertBefore(logEntry, keyLogElement.firstChild);
+                
+                // الحفاظ على الحد الأقصى للعرض
+                if (keyLogElement.children.length > 50) {
+                    keyLogElement.removeChild(keyLogElement.lastChild);
+                }
+            }
+            
+            function saveData() {
+                localStorage.setItem('totalKeys', totalKeys);
+                localStorage.setItem('keystrokes', JSON.stringify(keystrokes));
+            }
+            
+            function exportData() {
+                const data = {
+                    totalKeystrokes: totalKeys,
+                    sessionKeystrokes: sessionKeys,
+                    keystrokes: keystrokes
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'keystrokes-data.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+            
+            // تحذير في الكونسول
+            console.log(' هذا البرنماج للأغراض التعلميةفقط مع مهندس محمد بدوي');
+         
+        });
+    </script>
+</body>
+</html>
